@@ -47,8 +47,6 @@ for i in range(1, 19):
     response = tn.read_until(b'>')
     print_telnet(response)
     first_card = i*5-4
-    tn.close()
-    exit(0)
     # loop over cards per box
     for j in range(5):
         card = first_card + j
