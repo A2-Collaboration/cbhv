@@ -37,8 +37,9 @@ def send_telnet_command(tn, cmd):
         response = tn.read_until(b'>')
     except EOFError:
         logging.error('Telnet connection closed while trying to send command ' + cmd.rstrip('\r\n'))
-        raise
+        return False
     print_telnet(response)
+    return True
 
 logging.debug('Try to read file ' + gains_file)
 with open(gains_file, 'r') as gains:
@@ -57,8 +58,11 @@ for i in range(1, 19):
     sleep(1)
     response = tn.read_until(b'>')
     print_telnet(response)
-    send_telnet_command(tn, 'eemem unprotect')
+    if not send_telnet_command(tn, 'eemem unprotect'):
+        logging.warning('Box %s may be dead, continue with next one' % host)
+        continue
     first_card = i*5-4
+    logging.info('Start setting correction values, this may take 2 minutes or longer')
     # loop over cards per box
     for j in range(5):
         card = first_card + j
@@ -80,18 +84,32 @@ for i in range(1, 19):
             continue
         m_cmd = "eemem add M%d %s\r\n" % (j, ','.join(m_values))
         n_cmd = "eemem add N%d %s\r\n" % (j, ','.join(n_values))
-        send_telnet_command(tn, m_cmd)
-        send_telnet_command(tn, n_cmd)
+        if not send_telnet_command(tn, m_cmd):
+            logging.warning('Box %s may be dead, continue with next one' % host)
+            continue
+        if not send_telnet_command(tn, n_cmd):
+            logging.warning('Box %s may be dead, continue with next one' % host)
+            continue
         
     # activate correction loop
-    send_telnet_command(tn, 'eemem add REG on')
+    if not send_telnet_command(tn, 'eemem add REG on'):
+        logging.warning('Box %s may be dead, continue with next one' % host)
+        continue
     
     # finished setting the values for the different channels per card, now store them
-    send_telnet_command(tn, 'eemem protect')
-    send_telnet_command(tn, 'read_config')
+    if not send_telnet_command(tn, 'eemem protect'):
+        logging.warning('Box %s may be dead, continue with next one' % host)
+        continue
+    if not send_telnet_command(tn, 'read_config'):
+        logging.warning('Box %s may be dead, continue with next one' % host)
+        continue
     logging.debug('Send eemem print')
     tn.write(b"eemem print\r\n")
-    logging.info('eemem print returned:\n' + tn.read_until(b'>').decode('ascii'))
+    try:
+        logging.info('eemem print returned:\n' + tn.read_until(b'>').rstrip(b'\r\n>').decode('ascii'))
+    except EOFError:
+        logging.warning("Box %s didn't respond after sending eemem print, go to next box" % host)
+        continue
     logging.debug('Closing telnet connection to box ' + host)
     tn.close()
 
