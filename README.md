@@ -11,7 +11,7 @@ Everytime a PMT get's exchanged or even a splitter card is broken and exchanged,
 * Open PowerShell programme as administrator  
   first command:  
   `Set-ExecutionPolicy RemoteSigned`  
-  then you can execute the following script (please edit where necessary), which will take around 6-8h to finish: `hvcb_spannungsverlauf_alle_hvboxen.zip`
+  then you can execute the following script (please edit where necessary), which will take around 6-8h to finish: `cbhv_measure_corr_values.ps1`
 * analyse data with `root` and `cbhv_calibrate_boxes.C`
 * optional: convert all ps to pdf and add them together with `convert_add_ps2pdf.sh`
 * finally set the correction values with `cbhv_set_corr_values.py`
