@@ -78,8 +78,8 @@ for i in range(1, 19):
         print_telnet(response)
         
     # activate correction loop
-    logging.debug('Send eemem add REG off')
-    tn.write(b"eemem add REG off\r\n")
+    logging.debug('Send eemem add REG on')
+    tn.write(b"eemem add REG on\r\n")
     response = tn.read_until(b'>')
     print_telnet(response)
     
