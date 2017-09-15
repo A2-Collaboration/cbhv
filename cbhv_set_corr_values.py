@@ -21,12 +21,24 @@ if debug:
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', datefmt='%Y-%m-%d %I:%M:%S', level=level)
 
-def print_telnet(str):
+def print_telnet(string):
     """remove the telnet prompt from the string and print the output using logging.DEBUG level"""
-    cleaned = str.rstrip(b'\r\n>').decode('ascii').strip()
+    cleaned = string.rstrip(b'\r\n>').decode('ascii').strip()
     if not cleaned:
         cleaned = 'empty'
     logging.debug('Telnet response: ' + cleaned)
+
+def send_telnet_command(tn, cmd):
+    logging.debug('Send ' + cmd.rstrip('\r\n'))
+    if not cmd.endswith('\r\n'):
+        cmd += '\r\n'
+    tn.write(cmd.encode('ascii'))
+    try:
+        response = tn.read_until(b'>')
+    except EOFError:
+        logging.error('Telnet connection closed while trying to send command ' + cmd.rstrip('\r\n'))
+        raise
+    print_telnet(response)
 
 logging.debug('Try to read file ' + gains_file)
 with open(gains_file, 'r') as gains:
@@ -45,10 +57,7 @@ for i in range(1, 19):
     sleep(1)
     response = tn.read_until(b'>')
     print_telnet(response)
-    logging.debug('Send eemem unprotect')
-    tn.write(b"eemem unprotect\r\n")
-    response = tn.read_until(b'>')
-    print_telnet(response)
+    send_telnet_command(tn, 'eemem unprotect')
     first_card = i*5-4
     # loop over cards per box
     for j in range(5):
@@ -71,30 +80,15 @@ for i in range(1, 19):
             continue
         m_cmd = "eemem add M%d %s\r\n" % (j, ','.join(m_values))
         n_cmd = "eemem add N%d %s\r\n" % (j, ','.join(n_values))
-        logging.debug('Issue command: ' + m_cmd.strip())
-        tn.write(m_cmd.encode('ascii'))
-        response = tn.read_until(b'>')
-        print_telnet(response)
-        logging.debug('Issue command: ' + n_cmd.strip())
-        tn.write(n_cmd.encode('ascii'))
-        response = tn.read_until(b'>')
-        print_telnet(response)
+        send_telnet_command(tn, m_cmd)
+        send_telnet_command(tn, n_cmd)
         
     # activate correction loop
-    logging.debug('Send eemem add REG on')
-    tn.write(b"eemem add REG on\r\n")
-    response = tn.read_until(b'>')
-    print_telnet(response)
+    send_telnet_command(tn, 'eemem add REG on')
     
     # finished setting the values for the different channels per card, now store them
-    logging.debug('Send eemem protect')
-    tn.write(b"eemem protect\r\n")
-    response = tn.read_until(b'>')
-    print_telnet(response)
-    logging.debug('Send read_config')
-    tn.write(b"read_config\r\n")
-    response = tn.read_until(b'>', 40)
-    print_telnet(response)
+    send_telnet_command(tn, 'eemem protect')
+    send_telnet_command(tn, 'read_config')
     logging.debug('Send eemem print')
     tn.write(b"eemem print\r\n")
     logging.info('eemem print returned:\n' + tn.read_until(b'>').decode('ascii'))
