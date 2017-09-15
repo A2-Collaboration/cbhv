@@ -7,6 +7,7 @@ To make the output less verbose, set debug to False
 '''
 
 from sys import exit
+from time import sleep
 from telnetlib import Telnet
 import logging
 
@@ -40,6 +41,8 @@ for i in range(1, 19):
     host = host_prefix % i
     logging.info('Connecting to box ' + host)
     tn = Telnet(host)
+    # telnet needs some time...
+    sleep(1)
     response = tn.read_until(b'>')
     print_telnet(response)
     logging.debug('Send eemem unprotect')
