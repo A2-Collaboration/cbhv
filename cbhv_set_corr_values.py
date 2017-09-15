@@ -77,6 +77,12 @@ for i in range(1, 19):
         response = tn.read_until(b'>')
         print_telnet(response)
         
+    # activate correction loop
+    logging.debug('Send eemem add REG off')
+    tn.write(b"eemem add REG off\r\n")
+    response = tn.read_until(b'>')
+    print_telnet(response)
+    
     # finished setting the values for the different channels per card, now store them
     logging.debug('Send eemem protect')
     tn.write(b"eemem protect\r\n")
