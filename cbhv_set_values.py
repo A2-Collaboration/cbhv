@@ -136,10 +136,16 @@ def main():
                     logger.warning('Box %s may be dead, continue with next one' % host)
                     continue
 
-            #activate correction loop
-            if not tnm.send_command('eemem add REG on'):
-                logger.warning('Box %s may be dead, continue with next one' % host)
-                continue
+            if reset:
+                # deactivate correction loop while setting zeros
+                if not tnm.send_command('eemem add REG off'):
+                    logger.warning('Box %s may be dead, continue with next one' % host)
+                    continue
+            else:
+                # activate correction loop
+                if not tnm.send_command('eemem add REG on'):
+                    logger.warning('Box %s may be dead, continue with next one' % host)
+                    continue
 
             # finished setting the values for the different channels per card, now store them
             if not tnm.send_command('eemem protect'):
