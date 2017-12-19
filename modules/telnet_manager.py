@@ -35,14 +35,17 @@ class TelnetManager(Telnet):
         """Read telnet response until next prompt"""
         self.read_until(self.prompt)
 
-    def print(self, string):
+    def print(self, string, print_info=False):
         """remove telnet prompt from the string and output using logging.DEBUG level"""
         cleaned = string.rstrip(self.prompt).decode('ascii').strip()
         if not cleaned:
             cleaned = 'empty'
-        self.__log.debug('Telnet response: ' + cleaned)
+        if print_info:
+            self.__log.info('Telnet response:\n' + cleaned)
+        else:
+            self.__log.debug('Telnet response: ' + cleaned)
 
-    def send_command(self, cmd):
+    def send_command(self, cmd, print_info=False):
         """send telnet command and wait for response"""
         self.__log.debug('Send ' + cmd.rstrip(self.endline))
         if not cmd.endswith(self.endline):
@@ -54,5 +57,5 @@ class TelnetManager(Telnet):
             self.__log.error('Telnet connection closed while trying to send command '
                              + cmd.rstrip(self.endline))
             return False
-        self.print(response)
+        self.print(response, print_info)
         return True
