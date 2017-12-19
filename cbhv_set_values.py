@@ -19,6 +19,12 @@ from modules.color import print_color, print_error, ColoredLogger
 from modules.telnet_manager import TelnetManager
 
 
+# check if the installed Python version is at least 3.6
+# the usage of Telnet as a context manager was added in 3.6, which is used in this script
+if sys.hexversion < 0x3060000:
+    print_error('At least Python 3.6 is used to run this script')
+    sys.exit(1)
+
 def is_valid_file(parser, arg):
     """Helper function for argparse to check if a file exists"""
     if not os.path.isfile(arg):
