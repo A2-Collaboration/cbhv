@@ -9,10 +9,10 @@ import logging
 
 
 class TelnetManager(Telnet):
-    """Class to manage the telnet connection which provices some useful additional methods"""
+    """Class to manage the telnet connection which provides some useful additional methods"""
 
     def __init__(self, hostname=None, port=23, logger=None):
-        self.__tn = super().__init__(host=hostname, port=port)
+        Telnet.__init__(self, host=hostname, port=port)
         self.__host = hostname
         self.__log = logger
         if not self.__log:
@@ -27,7 +27,7 @@ class TelnetManager(Telnet):
         self.read()
 
     def __del__(self):
-        self.__tn.close()
+        self.close()
         self.__log = None
 
 
@@ -47,7 +47,7 @@ class TelnetManager(Telnet):
         self.__log.debug('Send ' + cmd.rstrip(self.endline))
         if not cmd.endswith(self.endline):
             cmd += self.endline
-        self.__tn.write(cmd.endcode('ascii'))
+        self.write(cmd.encode('ascii'))
         try:
             response = super().read_until(self.prompt)
         except EOFError:
