@@ -167,7 +167,6 @@ def main():
                 continue
             logger.debug('Closing telnet connection to box ' + host)
         logger.debug('Telnet connection closed')
-        break
 
     print_color('Done!', 'GREEN')
 
