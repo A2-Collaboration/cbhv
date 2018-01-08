@@ -46,10 +46,8 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true, char* TxtFileName =
       TPostScript *ps = new TPostScript(PsFileName, 112);
     }
     
-    // Set file name correctly, careful with the 0's
-    if(i<10) sprintf(FileName, "karte00%d.txt", i);
-    if(i>9 && i<100) sprintf(FileName, "karte0%d.txt", i);
-    if(i>99) sprintf(FileName, "karte%d.txt", i);
+    // Set file name
+    sprintf(FileName, "karte%03d.txt", i);
     
     // Open file
     InFile = fopen(FileName, "r");
