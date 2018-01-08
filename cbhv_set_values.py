@@ -207,7 +207,7 @@ def set_values(logger, host_prefix, hv_gains=[], reset=False):
 
     return True
 
-def measure_values(logger, host_prefix, output):
+def measure_values(logger, host_prefix, output, stepping):
     """
     This method performs a measurement of the CB HV correction values
     and stores the results in a separate file per card
@@ -258,6 +258,8 @@ def main():
                         help='Specify the output file name for the correction values '
                         'if -c/--calibrate is used including formatting, like "karte%%04d.txt". '
                         'Output path can be changed with -o/--output.')
+    parser.add_argument('-s', '--stepping', nargs=1, type=int,
+                        help='Voltage stepping used for calibration')
     parser.add_argument('-f', '--force', action='store_true',
                         help='Force creation of directories or other minor errors '
                         'which otherwise terminate the program')
@@ -281,6 +283,7 @@ def main():
     host_prefix = 'cbhv%02d'
     output = './cbhv_corr_measuremt'
     out_file = 'karte%04d.txt'
+    stepping = 10
     force = args.force
 
     if args.host_prefix:
@@ -324,6 +327,9 @@ def main():
         # create full output path string
         output = get_path(output, out_file)
         logger.info('The following path and naming scheme will be used for the files: %s' % output)
+        if args.stepping:
+            stepping = args.stepping[0]
+            logger.info('Voltage stepping set to %d' % stepping)
 
 
     print_color('Start connecting to the CBHV boxes', 'GREEN')
@@ -332,7 +338,7 @@ def main():
         if not set_values(logger, host_prefix, hv_gains, reset):
             sys.exit('Failed setting CB HV values')
     else:
-        if not measure_values(logger, host_prefix, output):
+        if not measure_values(logger, host_prefix, output, stepping):
             sys.exit('Failed measuring CB HV correction values')
 
     print_color('Done!', 'GREEN')
