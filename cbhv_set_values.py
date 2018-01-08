@@ -11,6 +11,7 @@ import sys
 import os
 import errno
 import argparse
+from os.path import abspath, dirname, join as pjoin
 import logging
 # import own modules
 # helper for colored output
@@ -24,6 +25,104 @@ from modules.telnet_manager import TelnetManager
 if sys.hexversion < 0x3060000:
     print_error('At least Python 3.6 is required to run this script')
     sys.exit(1)
+
+def check_path(path, create=False, write=True):
+    """Check if given path exists and is readable as well as writable if specified;
+    if create is true and the path doesn't exist, the directories will be created if possible"""
+    path = os.path.expanduser(path)
+    exist = os.path.isdir(path)
+    if not exist and create:
+        print("Directory '%s' does not exist, it will be created now" % path)
+        # try to create the directory; if it should exist for whatever reason,
+        # ignore it, otherwise report the error
+        try:
+            os.makedirs(path)
+        except OSError as exception:
+            if exception.errno == errno.EACCES:
+                print_error("[ERROR] You don't have the permission to create directories in '%s'"
+                            % dirname(path))
+                return False
+            elif exception.errno != errno.EEXIST:
+                raise
+        return True
+    elif not exist:
+        print_error("[ERROR] Directory '%s' does not exist" % path)
+        return False
+    else:
+        if not is_readable(path):
+            print_error("[ERROR] Directory '%s' is not readable" % path)
+            return False
+        if write and not is_writable(path):
+            print_error("[ERROR] Directory '%s' is not writable" % path)
+            return False
+    return True
+
+def check_file(path, file):
+    """Check if a file in a certain path exists and is readable;
+    if the file argument is omitted only path is checked, it's recommended to use
+    check_path instead for this case"""
+    path = os.path.expanduser(path)
+    if file is None:
+        if not os.path.isfile(path):
+            print_error("[ERROR] The file '%s' does not exist!" % (path))
+            return False
+        else:
+            if not is_readable(path):
+                print_error("[ERROR] The file '%s' is not readable!" % (path))
+                return False
+            return True
+    path = get_path(path, file)
+    if not os.path.isfile(path):
+        print_error("[ERROR] The file '%s' does not exist!" % path)
+        return False
+    else:
+        if not is_readable(path):
+            print_error("[ERROR] The file '%s' is not readable!" % (path))
+            return False
+        return True
+
+def check_permission(path, permission):
+    """Check if the given permission is allowed for path"""
+    if os.path.exists(path):
+        return os.access(path, permission)
+    return False
+
+def is_readable(path):
+    """Check if path is readable"""
+    return check_permission(path, os.R_OK)
+
+def is_writable(path):
+    """Check if path is writable"""
+    return check_permission(path, os.W_OK)
+
+def is_executable(path):
+    """Check if path is executable"""
+    return check_permission(path, os.X_OK)
+
+def get_path(path, file=None):
+    """Get the absolute path of a given path and an optional file"""
+    if not file:
+        return abspath(os.path.expanduser(path))
+    return abspath(os.path.expanduser(pjoin(path, file)))
+
+
+def check_directory(path, force, verbose, relative=None, write=True):
+    """Check if a given (relative) directory exists and is writable, update settings accordingly"""
+    # check if the given output directory exists
+    if verbose:
+        print('Check the specified directory %s' % path)
+    if relative is not None:
+        path = get_path(relative, path)
+    else:
+        path = get_path(path)
+    if not check_path(path, force, write):
+        if verbose and not force:
+            print('        Please make sure the specified directory exists.')
+        return False
+    if verbose:
+        print('Path found:', path)
+
+    return True
 
 
 def set_values(logger, host_prefix, hv_gains=[], reset=False):
@@ -209,6 +308,18 @@ def main():
             logger.info('Successfully read %d lines from file %s', len(hv_gains), gains_file)
     else:
         logger.info('Preparing measurement of CB HV correction values . . .')
+        # check if the output path exists and is writable
+        if args.output:
+            if not check_path(args.output[0], force, write=True):
+                sys.exit('The output directory %s cannot be used' % args.output[0])
+            output = get_path(args.output[0])
+            logger.info('Setting custom output directory: %s' % output)
+        if args.out_file:
+            out_file = args.out_file[0]
+            logger.info('Set custom output file formatting to "%s"', out_file)
+        # create full output path string
+        output = get_path(output, out_file)
+        logger.info('The following path and naming scheme will be used for the files: %s' % output)
 
 
     print_color('Start connecting to the CBHV boxes', 'GREEN')
