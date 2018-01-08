@@ -45,7 +45,7 @@ class TelnetManager(Telnet):
         else:
             self.__log.debug('Telnet response: ' + cleaned)
 
-    def send_command(self, cmd, print_info=False):
+    def send_command(self, cmd, print_info=False, return_response=False):
         """send telnet command and wait for response"""
         self.__log.debug('Send ' + cmd.rstrip(self.endline))
         if not cmd.endswith(self.endline):
@@ -58,4 +58,7 @@ class TelnetManager(Telnet):
                              + cmd.rstrip(self.endline))
             return False
         self.print(response, print_info)
+
+        if return_response:
+            return response.rstrip(self.prompt).decode('ascii').strip()
         return True
