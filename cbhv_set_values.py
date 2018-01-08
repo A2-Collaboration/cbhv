@@ -279,7 +279,7 @@ def main():
     gains_file = 'HV_gains_offsets.txt'
     hv_gains = []
     host_prefix = 'cbhv%02d'
-    output = '.'
+    output = './cbhv_corr_measuremt'
     out_file = 'karte%04d.txt'
     force = args.force
 
@@ -314,6 +314,10 @@ def main():
                 sys.exit('The output directory %s cannot be used' % args.output[0])
             output = get_path(args.output[0])
             logger.info('Setting custom output directory: %s' % output)
+        else:
+            logger.info('Default output directory will be used')
+            if not check_directory(output, True, verbose, write=True):
+                sys.exit('The output directory %s cannot be used' % output)
         if args.out_file:
             out_file = args.out_file[0]
             logger.info('Set custom output file formatting to "%s"', out_file)
