@@ -25,6 +25,90 @@ if sys.hexversion < 0x3060000:
     print_error('At least Python 3.6 is required to run this script')
     sys.exit(1)
 
+
+def set_values(logger, host_prefix, hv_gains=[], reset=False):
+    """
+    This method is used to either reset the HV boxes HV gains to zero
+    or write calibrated values to them, given as a list of lines from a file provided earlier
+    """
+    if not hv_gains and not reset:
+        logger.error("No HV gains given and no reset of values specified")
+        return False
+
+    # start connecting to the boxes
+    for i in range(1, 19):
+        host = host_prefix % i
+        logger.info('Connecting to box ' + host)
+        with TelnetManager(host, logger=logger) as tnm:
+            if not tnm.send_command('eemem unprotect'):
+                logger.warning('Box %s may be dead, continue with next one' % host)
+                continue
+            first_card = i*5-4
+            logger.info('Start setting correction values, this may take 2 minutes or longer')
+            # loop over cards per box
+            for j in range(5):
+                card = first_card + j
+                logger.debug('Handling card %d' % card)
+                m_vals, n_vals = [], []
+                m_cmd, n_cmd = '', ''
+                # loop over channels per card and read the values if they should not be set to 0
+                if not reset:
+                    for channel in range(8):
+                        line = next((i for i in hv_gains if i.startswith("%d,%d" % (card, channel))), None)
+                        if not line:
+                            logger.error("No values found for card %d, channel %d" % (card, channel))
+                            continue
+                        vals = line.strip().split(',')[-2:]
+                        m_vals.append(vals[0])
+                        n_vals.append(vals[1])
+
+                    if len(m_vals) is not 8 or len(n_vals) is not 8:
+                        logger.error("Card %d problem parsing values!" % card)
+                        continue
+                    m_cmd = "eemem add M%d %s\r\n" % (j, ','.join(m_vals))
+                    n_cmd = "eemem add N%d %s\r\n" % (j, ','.join(n_vals))
+                else:
+                    m_cmd = "eemem add M%d %s\r\n" % (j, ','.join('0'*8))
+                    n_cmd = "eemem add N%d %s\r\n" % (j, ','.join('0'*8))
+
+                if not tnm.send_command(m_cmd):
+                    logger.warning('Box %s may be dead, continue with next one' % host)
+                    continue
+                if not tnm.send_command(n_cmd):
+                    logger.warning('Box %s may be dead, continue with next one' % host)
+                    continue
+
+            if reset:
+                # deactivate correction loop while setting zeros
+                if not tnm.send_command('eemem add REG off'):
+                    logger.warning('Box %s may be dead, continue with next one' % host)
+                    continue
+            else:
+                # activate correction loop
+                if not tnm.send_command('eemem add REG on'):
+                    logger.warning('Box %s may be dead, continue with next one' % host)
+                    continue
+
+            # finished setting the values for the different channels per card, now store them
+            if not tnm.send_command('eemem protect'):
+                logger.warning('Box %s may be dead, continue with next one' % host)
+                continue
+            if not tnm.send_command('read_config'):
+                logger.warning('Box %s may be dead, continue with next one' % host)
+                continue
+            logger.debug('Send eemem print')
+            logger.info('eemem print returned the following:')
+            if not tnm.send_command("eemem print", print_info=True):
+                logger.warning("Box %s didn't respond after sending eemem print, go to next box" % host)
+                continue
+            logger.debug('Closing telnet connection to box ' + host)
+        logger.debug('Telnet connection closed')
+
+    logger.info('Done')
+
+    return True
+
+
 def is_valid_file(parser, arg):
     """Helper function for argparse to check if a file exists"""
     if not os.path.isfile(arg):
@@ -100,73 +184,8 @@ def main():
 
     print_color('Start connecting to the CBHV boxes', 'GREEN')
 
-    for i in range(1, 19):
-        host = host_prefix % i
-        logger.info('Connecting to box ' + host)
-        with TelnetManager(host, logger=logger) as tnm:
-            if not tnm.send_command('eemem unprotect'):
-                logger.warning('Box %s may be dead, continue with next one' % host)
-                continue
-            first_card = i*5-4
-            logger.info('Start setting correction values, this may take 2 minutes or longer')
-            # loop over cards per box
-            for j in range(5):
-                card = first_card + j
-                logger.debug('Handling card %d' % card)
-                m_vals, n_vals = [], []
-                m_cmd, n_cmd = '', ''
-                # loop over channels per card and read the values if they should not be set to 0
-                if not reset:
-                    for channel in range(8):
-                        line = next((i for i in hv_gains if i.startswith("%d,%d" % (card, channel))), None)
-                        if not line:
-                            logger.error("No values found for card %d, channel %d" % (card, channel))
-                            continue
-                        vals = line.strip().split(',')[-2:]
-                        m_vals.append(vals[0])
-                        n_vals.append(vals[1])
-
-                    if len(m_vals) is not 8 or len(n_vals) is not 8:
-                        logger.error("Card %d problem parsing values!" % card)
-                        continue
-                    m_cmd = "eemem add M%d %s\r\n" % (j, ','.join(m_vals))
-                    n_cmd = "eemem add N%d %s\r\n" % (j, ','.join(n_vals))
-                else:
-                    m_cmd = "eemem add M%d %s\r\n" % (j, ','.join('0'*8))
-                    n_cmd = "eemem add N%d %s\r\n" % (j, ','.join('0'*8))
-
-                if not tnm.send_command(m_cmd):
-                    logger.warning('Box %s may be dead, continue with next one' % host)
-                    continue
-                if not tnm.send_command(n_cmd):
-                    logger.warning('Box %s may be dead, continue with next one' % host)
-                    continue
-
-            if reset:
-                # deactivate correction loop while setting zeros
-                if not tnm.send_command('eemem add REG off'):
-                    logger.warning('Box %s may be dead, continue with next one' % host)
-                    continue
-            else:
-                # activate correction loop
-                if not tnm.send_command('eemem add REG on'):
-                    logger.warning('Box %s may be dead, continue with next one' % host)
-                    continue
-
-            # finished setting the values for the different channels per card, now store them
-            if not tnm.send_command('eemem protect'):
-                logger.warning('Box %s may be dead, continue with next one' % host)
-                continue
-            if not tnm.send_command('read_config'):
-                logger.warning('Box %s may be dead, continue with next one' % host)
-                continue
-            logger.debug('Send eemem print')
-            logger.info('eemem print returned the following:')
-            if not tnm.send_command("eemem print", print_info=True):
-                logger.warning("Box %s didn't respond after sending eemem print, go to next box" % host)
-                continue
-            logger.debug('Closing telnet connection to box ' + host)
-        logger.debug('Telnet connection closed')
+    if not set_values(logger, host_prefix, hv_gains, reset):
+        sys.exit('Failed setting CB HV values')
 
     print_color('Done!', 'GREEN')
 
