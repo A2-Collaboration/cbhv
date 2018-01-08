@@ -143,7 +143,11 @@ def main():
                         'including formatting for digits, like "cbhv%%02d"')
     parser.add_argument('-r', '--reset', action='store_true',
                         help='Reset correction values to 0')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='Force creation of directories or other minor errors '
+                        'which otherwise terminate the program')
     parser.set_defaults(reset=False)
+    parser.set_defaults(force=False)
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Print additional output')
 
@@ -158,7 +162,7 @@ def main():
     gains_file = 'HV_gains_offsets.txt'
     hv_gains = []
     host_prefix = 'cbhv%02d'
-    force = False
+    force = args.force
 
     if args.host_prefix:
         host_prefix = args.host_prefix[0]
