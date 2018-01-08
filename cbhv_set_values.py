@@ -13,6 +13,7 @@ import errno
 import argparse
 from os.path import abspath, dirname, join as pjoin
 import logging
+from time import sleep, strftime as time_str
 # import own modules
 # helper for colored output
 from modules.color import print_color, print_error, ColoredLogger
@@ -218,6 +219,48 @@ def measure_values(logger, host_prefix, output, stepping, v_range):
     if len(v_range) is not 2:
         logger.error('No valid voltage range provided')
         return False
+
+    logger.debug('Run correction measurement from %d V to %d V' % tuple(v_range))
+    logger.debug('The used stepping is %d V' % stepping)
+
+    # start connecting to the boxes
+    for i in range(1, 19):
+        host = host_prefix % i
+        logger.info('Connecting to box ' + host)
+        with TelnetManager(host, logger=logger) as tnm:
+            # set the time on the board
+            if not tnm.send_command('time ' + time_str('%H %M %S %d %m %Y')):
+                logger.warning('Box %s may be dead, continue with next one' % host)
+                continue
+            first_card = i*5-4
+            logger.info('Start measuring correction values, this will take some time')
+            # loop over cards per box
+            for j in range(5):
+                card = first_card + j
+                logger.debug('Handling card %d' % card)
+                with open(output % card, 'w') as out:
+                    out.write('Sollwert,Date,Level,CH0,CH1,CH2,CH3,CH4,CH5,CH6,CH7')
+                    # run correction measurement loop
+                    for val in range(v_range[0], v_range[1], stepping):
+                        for channel in range(8):
+                            if not tnm.send_command('SetVpmF %d %d %d' % (j, channel, val)):
+                                logger.warning('Box %s may be dead, continue with next one' % host)
+                                continue
+                        sleep(3)
+                        ret = tnm.send_command('read_adc csv2L %d' % j, return_response=True)
+                        if not ret:
+                            logger.error('No response from card %d (box %d)' % (card, host))
+                            continue
+                        else:
+                            #TODO: check format of response, properly reformat it before writing to file
+                            out.write(ret)
+
+            logger.debug('Closing telnet connection to box ' + host)
+        logger.debug('Telnet connection closed')
+
+    logger.info('Done')
+
+    return True
 
 
 def is_valid_file(parser, arg):
