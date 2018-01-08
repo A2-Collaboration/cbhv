@@ -125,7 +125,7 @@ def check_directory(path, force, verbose, relative=None, write=True):
     return True
 
 
-def set_values(logger, host_prefix, hv_gains=[], reset=False):
+def set_values(logger, host_prefix, hv_gains=None, reset=False):
     """
     This method is used to either reset the HV boxes HV gains to zero
     or write calibrated values to them, given as a list of lines from a file provided earlier
