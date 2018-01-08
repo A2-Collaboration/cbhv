@@ -108,6 +108,15 @@ def set_values(logger, host_prefix, hv_gains=[], reset=False):
 
     return True
 
+def measure_values(logger, host_prefix, output):
+    """
+    This method performs a measurement of the CB HV correction values
+    and stores the results in a separate file per card
+    """
+    if not output:
+        logger.error("No output given")
+        return False
+
 
 def is_valid_file(parser, arg):
     """Helper function for argparse to check if a file exists"""
@@ -207,6 +216,9 @@ def main():
     if not calibrate:
         if not set_values(logger, host_prefix, hv_gains, reset):
             sys.exit('Failed setting CB HV values')
+    else:
+        if not measure_values(logger, host_prefix, output):
+            sys.exit('Failed measuring CB HV correction values')
 
     print_color('Done!', 'GREEN')
 
