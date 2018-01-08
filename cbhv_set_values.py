@@ -207,13 +207,16 @@ def set_values(logger, host_prefix, hv_gains=[], reset=False):
 
     return True
 
-def measure_values(logger, host_prefix, output, stepping):
+def measure_values(logger, host_prefix, output, stepping, v_range):
     """
     This method performs a measurement of the CB HV correction values
     and stores the results in a separate file per card
     """
     if not output:
-        logger.error("No output given")
+        logger.error('No output given')
+        return False
+    if len(v_range) is not 2:
+        logger.error('No valid voltage range provided')
         return False
 
 
@@ -260,6 +263,8 @@ def main():
                         'Output path can be changed with -o/--output.')
     parser.add_argument('-s', '--stepping', nargs=1, type=int,
                         help='Voltage stepping used for calibration')
+    parser.add_argument('--range', nargs=2, type=int, metavar=('V_min', 'V_max'),
+                        help='Voltage range [V_min, V_max) used for calibration')
     parser.add_argument('-f', '--force', action='store_true',
                         help='Force creation of directories or other minor errors '
                         'which otherwise terminate the program')
@@ -284,6 +289,7 @@ def main():
     output = './cbhv_corr_measuremt'
     out_file = 'karte%04d.txt'
     stepping = 10
+    v_range = [1300, 1650]
     force = args.force
 
     if args.host_prefix:
@@ -330,6 +336,9 @@ def main():
         if args.stepping:
             stepping = args.stepping[0]
             logger.info('Voltage stepping set to %d' % stepping)
+        if args.range:
+            v_range = args.range
+            logger.info('The following voltage range will be used: %d <= V < %d' % tuple(v_range))
 
 
     print_color('Start connecting to the CBHV boxes', 'GREEN')
@@ -338,7 +347,7 @@ def main():
         if not set_values(logger, host_prefix, hv_gains, reset):
             sys.exit('Failed setting CB HV values')
     else:
-        if not measure_values(logger, host_prefix, output, stepping):
+        if not measure_values(logger, host_prefix, output, stepping, v_range):
             sys.exit('Failed measuring CB HV correction values')
 
     print_color('Done!', 'GREEN')
