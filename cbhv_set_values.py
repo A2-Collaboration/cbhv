@@ -310,7 +310,7 @@ def main():
         logger.info('Preparing measurement of CB HV correction values . . .')
         # check if the output path exists and is writable
         if args.output:
-            if not check_path(args.output[0], force, write=True):
+            if not check_directory(args.output[0], force, verbose, write=True):
                 sys.exit('The output directory %s cannot be used' % args.output[0])
             output = get_path(args.output[0])
             logger.info('Setting custom output directory: %s' % output)
