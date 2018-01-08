@@ -243,8 +243,8 @@ def main():
                         help='Optional: Specify a custom correction file; '
                         'default will be HV_gains_offsets.txt in the current directory')
     parser.add_argument('-o', '--output', nargs=1, metavar='output_directory',
-                        type=lambda x: is_valid_dir(parser, x),
-                        help='Optional: Custom output directory')
+                        #type=lambda x: is_valid_dir(parser, x),
+                        type=str, help='Optional: Custom output directory')
     parser.add_argument('-p', '--prefix', nargs=1, type=str,
                         dest='host_prefix', metavar='"host prefix"',
                         help='Specify a different hostname scheme for the CBHV boxes, '
