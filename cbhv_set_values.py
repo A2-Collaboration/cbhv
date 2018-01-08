@@ -143,10 +143,18 @@ def main():
                         'including formatting for digits, like "cbhv%%02d"')
     parser.add_argument('-r', '--reset', action='store_true',
                         help='Reset correction values to 0')
+    parser.add_argument('-c', '--calibrate', action='store_true',
+                        help='Measure correction values')
+    parser.add_argument('-n', '--name', nargs=1, type=str,
+                        dest='out_file', metavar='"output file name"',
+                        help='Specify the output file name for the correction values '
+                        'if -c/--calibrate is used including formatting, like "karte%%04d.txt". '
+                        'Output path can be changed with -o/--output.')
     parser.add_argument('-f', '--force', action='store_true',
                         help='Force creation of directories or other minor errors '
                         'which otherwise terminate the program')
     parser.set_defaults(reset=False)
+    parser.set_defaults(calibrate=False)
     parser.set_defaults(force=False)
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Print additional output')
@@ -157,39 +165,48 @@ def main():
     args = parser.parse_args()
     verbose = args.verbose
     reset = args.reset
+    calibrate = args.calibrate
     if verbose:
         logger.setLevel(logging.DEBUG)
     gains_file = 'HV_gains_offsets.txt'
     hv_gains = []
     host_prefix = 'cbhv%02d'
+    output = '.'
+    out_file = 'karte%04d.txt'
     force = args.force
 
     if args.host_prefix:
         host_prefix = args.host_prefix[0]
         logger.info('Set custom host prefix to "%s"', host_prefix)
 
-    if reset and args.corr_file:
-        logger.warning('Reset issued and custom correction file given, '
-                       'correction values from file will be ignored!')
+    if not calibrate:
+        logger.info('Checking arguments for setting CB HV values . . .')
+        if reset and args.corr_file:
+            logger.warning('Reset issued and custom correction file given, '
+                           'correction values from file will be ignored!')
 
-    if args.corr_file:
-        gains_file = args.corr_file[0]
-        logger.info('Set custom gain correction file to %s', gains_file)
+        if args.corr_file:
+            gains_file = args.corr_file[0]
+            logger.info('Set custom gain correction file to %s', gains_file)
 
-    if not reset:
-        # read values from given file
-        logger.debug('Try to read file ' + gains_file)
-        with open(gains_file, 'r') as gains:
-            hv_gains = gains.readlines()
-        if not hv_gains:
-            logger.error('No lines read from file %s, please check the provided file', gains_file)
-            sys.exit(1)
-        logger.info('Successfully read %d lines from file %s', len(hv_gains), gains_file)
+        if not reset:
+            # read values from given file
+            logger.debug('Try to read file ' + gains_file)
+            with open(gains_file, 'r') as gains:
+                hv_gains = gains.readlines()
+            if not hv_gains:
+                logger.error('No lines read from file %s, please check the provided file', gains_file)
+                sys.exit(1)
+            logger.info('Successfully read %d lines from file %s', len(hv_gains), gains_file)
+    else:
+        logger.info('Preparing measurement of CB HV correction values . . .')
+
 
     print_color('Start connecting to the CBHV boxes', 'GREEN')
 
-    if not set_values(logger, host_prefix, hv_gains, reset):
-        sys.exit('Failed setting CB HV values')
+    if not calibrate:
+        if not set_values(logger, host_prefix, hv_gains, reset):
+            sys.exit('Failed setting CB HV values')
 
     print_color('Done!', 'GREEN')
 
