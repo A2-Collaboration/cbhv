@@ -248,7 +248,7 @@ def measure_values(logger, host_prefix, output, stepping, v_range, waiting_time,
                 card = first_card + j
                 logger.debug('Handling card %d' % card)
                 with open(output % card, 'w') as out:
-                    out.write('Setpoint,Date,Level,CH0,CH1,CH2,CH3,CH4,CH5,CH6,CH7')
+                    out.write('#Setpoint,Date,Level,CH0,CH1,CH2,CH3,CH4,CH5,CH6,CH7\n')
                     # run correction measurement loop
                     for val in range(v_range[0], v_range[1], stepping):
                         for channel in range(8):
@@ -262,8 +262,7 @@ def measure_values(logger, host_prefix, output, stepping, v_range, waiting_time,
                             logger.error('No response from card %d (box %d)' % (card, host))
                             continue
                         else:
-                            #TODO: check format of response, properly reformat it before writing to file
-                            out.write(ret)
+                            out.write(','.join([str(val), ret + '\n']))
 
             logger.debug('Closing telnet connection to box ' + host)
         logger.debug('Telnet connection closed')
@@ -350,7 +349,7 @@ def main():
     out_file = 'karte%03d.txt'
     stepping = 10
     v_range = [1300, 1650]
-    waiting_time = 3
+    waiting_time = 1
     force = args.force
 
     if args.host_prefix:
