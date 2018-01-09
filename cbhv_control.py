@@ -414,7 +414,7 @@ def main():
         if not set_values(logger, host_prefix, hv_gains, reset, boxes):
             sys.exit('Failed setting CB HV values')
     else:
-        if not measure_values(logger, host_prefix, output, stepping, v_range, wating_time, boxes):
+        if not measure_values(logger, host_prefix, output, stepping, v_range, waiting_time, boxes):
             sys.exit('Failed measuring CB HV correction values')
 
     print_color('Done!', 'GREEN')
