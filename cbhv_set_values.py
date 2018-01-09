@@ -319,6 +319,7 @@ def main():
 
     logging.setLoggerClass(ColoredLogger)
     logger = logging.getLogger('CBHV')
+    logger.setLevel(logging.INFO)
 
     args = parser.parse_args()
     verbose = args.verbose
