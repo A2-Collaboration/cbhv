@@ -3,10 +3,12 @@
 #include <TF1.h>
 
 void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
-		   char *TxtFileName = "HV_gains_offsets.txt", Bool_t SavePs = true)
+		   char *TxtFileName = "HV_gains_offsets.txt", Bool_t SavePlots = true)
 {
 	FILE *InFile;
+	FILE *TxtFile;
 	char FileName[255];
+	char plotFileName[100];
 	char line[1000];
 	Float_t SetHV[1000];
 	char SSetHV[1000];
@@ -32,7 +34,7 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	hvcanv->Divide(3, 3, 0.001, 0.001);
 
 	if (SaveTxt) {
-		FILE *TxtFile = fopen(TxtFileName, "w");
+		TxtFile = fopen(TxtFileName, "w");
 		if (!TxtFile) {
 			printf("Error opening output file\n");
 			exit(1);
@@ -42,11 +44,6 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	// Loop over all chosen files
 	for (UInt_t i = start; i <= stop; i++) {
 
-		if (SavePs) {
-			char PsFileName[100];
-			sprintf(PsFileName, "HV_gains_offsets%d.ps", i);
-			TPostScript *ps = new TPostScript(PsFileName, 112);
-		}
 		// Set file name
 		sprintf(FileName, "karte%03d.txt", i);
 
@@ -120,9 +117,10 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 				fprintf(TxtFile, "%d,%d,%f,%f\r\n", i, j, par1, par0);
 		}
 		hvcanv->Update();
-		if (SavePs) {
-			ps->Close();
-			printf("Saved histograms to %s\n", PsFileName);
+		if (SavePlots) {
+			sprintf(plotFileName, "HV_gains_offsets%03d.pdf", i);
+			hvcanv->SaveAs(plotFileName);
+			printf("Saved histograms to %s\n", plotFileName);
 		}
 		fclose(InFile);
 	}
