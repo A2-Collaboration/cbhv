@@ -331,7 +331,7 @@ def main():
     hv_gains = []
     host_prefix = 'cbhv%02d'
     output = './cbhv_corr_measuremt'
-    out_file = 'karte%04d.txt'
+    out_file = 'karte%03d.txt'
     stepping = 10
     v_range = [1300, 1650]
     force = args.force
@@ -366,7 +366,7 @@ def main():
             if not check_directory(args.output[0], force, verbose, write=True):
                 sys.exit('The output directory %s cannot be used' % args.output[0])
             output = get_path(args.output[0])
-            logger.info('Setting custom output directory: %s' % output)
+            logger.info('Setting custom output directory: %s', output)
         else:
             logger.info('Default output directory will be used')
             if not check_directory(output, True, verbose, write=True):
@@ -376,10 +376,10 @@ def main():
             logger.info('Set custom output file formatting to "%s"', out_file)
         # create full output path string
         output = get_path(output, out_file)
-        logger.info('The following path and naming scheme will be used for the files: %s' % output)
+        logger.info('The following path and naming scheme will be used for the files: %s', output)
         if args.stepping:
             stepping = args.stepping[0]
-            logger.info('Voltage stepping set to %d' % stepping)
+            logger.info('Voltage stepping set to %d', stepping)
         if args.range:
             v_range = args.range
             logger.info('The following voltage range will be used: %d <= V < %d' % tuple(v_range))
