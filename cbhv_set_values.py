@@ -125,6 +125,9 @@ def check_directory(path, force, verbose, relative=None, write=True):
 
     return True
 
+def list2str(lst):
+    """Convert a list to a comma-separated string representation of the list"""
+    return '[%s]' % ', '.join(map(str, lst))
 
 def set_values(logger, host_prefix, hv_gains=None, reset=False):
     """
