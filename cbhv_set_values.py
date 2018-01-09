@@ -129,7 +129,7 @@ def list2str(lst):
     """Convert a list to a comma-separated string representation of the list"""
     return '[%s]' % ', '.join(map(str, lst))
 
-def set_values(logger, host_prefix, hv_gains=None, reset=False):
+def set_values(logger, host_prefix, hv_gains=None, reset=False, boxes=list(range(1, 19))):
     """
     This method is used to either reset the HV boxes HV gains to zero
     or write calibrated values to them, given as a list of lines from a file provided earlier
@@ -139,7 +139,8 @@ def set_values(logger, host_prefix, hv_gains=None, reset=False):
         return False
 
     # start connecting to the boxes
-    for i in range(1, 19):
+    logger.debug('Start loop over the following boxes: ' + list2str(boxes))
+    for i in boxes:
         host = host_prefix % i
         logger.info('Connecting to box ' + host)
         with TelnetManager(host, logger=logger) as tnm:
@@ -211,7 +212,7 @@ def set_values(logger, host_prefix, hv_gains=None, reset=False):
 
     return True
 
-def measure_values(logger, host_prefix, output, stepping, v_range):
+def measure_values(logger, host_prefix, output, stepping, v_range, boxes):
     """
     This method performs a measurement of the CB HV correction values
     and stores the results in a separate file per card
@@ -222,12 +223,16 @@ def measure_values(logger, host_prefix, output, stepping, v_range):
     if len(v_range) is not 2:
         logger.error('No valid voltage range provided')
         return False
+    if not boxes:
+        logger.error('No boxes provided which should be used')
+        return False
 
     logger.debug('Run correction measurement from %d V to %d V' % tuple(v_range))
     logger.debug('The used stepping is %d V' % stepping)
 
     # start connecting to the boxes
-    for i in range(1, 19):
+    logger.debug('Start loop over the following boxes: ' + list2str(boxes))
+    for i in boxes:
         host = host_prefix % i
         logger.info('Connecting to box ' + host)
         with TelnetManager(host, logger=logger) as tnm:
@@ -314,6 +319,8 @@ def main():
     parser.add_argument('-f', '--force', action='store_true',
                         help='Force creation of directories or other minor errors '
                         'which otherwise terminate the program')
+    parser.add_argument('-b', '--boxes', nargs='+', type=int, metavar='box-number',
+                        help='Space-separated list of boxes which should be used, ints expected')
     parser.set_defaults(reset=False)
     parser.set_defaults(calibrate=False)
     parser.set_defaults(force=False)
@@ -330,9 +337,10 @@ def main():
     calibrate = args.calibrate
     if verbose:
         logger.setLevel(logging.DEBUG)
+    host_prefix = 'cbhv%02d'
+    boxes = list(range(1, 19))
     gains_file = 'HV_gains_offsets.txt'
     hv_gains = []
-    host_prefix = 'cbhv%02d'
     output = './cbhv_corr_measuremt'
     out_file = 'karte%03d.txt'
     stepping = 10
@@ -342,6 +350,10 @@ def main():
     if args.host_prefix:
         host_prefix = args.host_prefix[0]
         logger.info('Set custom host prefix to "%s"', host_prefix)
+
+    if args.boxes:
+        boxes = args.boxes
+        logger.info('Custom list of boxes will be used: %s', list2str(boxes))
 
     if not calibrate:
         logger.info('Checking arguments for setting CB HV values . . .')
@@ -391,10 +403,10 @@ def main():
     print_color('Start connecting to the CBHV boxes', 'GREEN')
 
     if not calibrate:
-        if not set_values(logger, host_prefix, hv_gains, reset):
+        if not set_values(logger, host_prefix, hv_gains, reset, boxes):
             sys.exit('Failed setting CB HV values')
     else:
-        if not measure_values(logger, host_prefix, output, stepping, v_range):
+        if not measure_values(logger, host_prefix, output, stepping, v_range, boxes):
             sys.exit('Failed measuring CB HV correction values')
 
     print_color('Done!', 'GREEN')
