@@ -20,3 +20,10 @@ Everytime a PMT get's exchanged or even a splitter card is broken and exchanged,
 * You can specify only certain boxes by using `-b` or `--boxes` and providing a list of boxes, e.g. `-b 1 2 4 12`
 * For the calibration you might want to change the stepping or the voltage range, `-s 20 --range 1300 1500`
 * For a full list of options run `cbhv_control.py` with `-h` or `--help`
+
+
+## Tips
+
+By default, running the ROOT macro creates a PDF with the histograms for the different channels. For every card a PDF is created. If you want to merge them to one file, you may want to use `pdftk`:
+
+    pdftk HV_gains_offsets*.pdf cat output HV_gains_all_cards.pdf
