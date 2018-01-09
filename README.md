@@ -15,4 +15,8 @@ Everytime a PMT get's exchanged or even a splitter card is broken and exchanged,
   `.\cbhv_control.py -i HV_gains_offsets.txt`
   This will also activate the correction loop again
 
+## Additional options
 
+* You can specify only certain boxes by using `-b` or `--boxes` and providing a list of boxes, e.g. `-b 1 2 4 12`
+* For the calibration you might want to change the stepping or the voltage range, `-s 20 --range 1300 1500`
+* For a full list of options run `cbhv_control.py` with `-h` or `--help`
