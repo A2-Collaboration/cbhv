@@ -253,7 +253,8 @@ def measure_values(logger, host_prefix, output, stepping, v_range, waiting_time,
                     for val in range(v_range[0], v_range[1], stepping):
                         for channel in range(8):
                             if not tnm.send_command('SetVpmF %d %d %d' % (j, channel, val)):
-                                logger.warning('Box %s may be dead, continue with next one' % host)
+                                logger.warning('Channel %d of box %s may be dead, '
+                                               'continue with next one' % (channel, host))
                                 continue
                         sleep(waiting_time)
                         ret = tnm.send_command('read_adc csv2L %d' % j, return_response=True)
