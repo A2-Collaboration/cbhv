@@ -212,7 +212,7 @@ def set_values(logger, host_prefix, hv_gains=None, reset=False, boxes=list(range
 
     return True
 
-def measure_values(logger, host_prefix, output, stepping, v_range, boxes):
+def measure_values(logger, host_prefix, output, stepping, v_range, waiting_time, boxes):
     """
     This method performs a measurement of the CB HV correction values
     and stores the results in a separate file per card
@@ -254,7 +254,7 @@ def measure_values(logger, host_prefix, output, stepping, v_range, boxes):
                             if not tnm.send_command('SetVpmF %d %d %d' % (j, channel, val)):
                                 logger.warning('Box %s may be dead, continue with next one' % host)
                                 continue
-                        sleep(3)
+                        sleep(waiting_time)
                         ret = tnm.send_command('read_adc csv2L %d' % j, return_response=True)
                         if not ret:
                             logger.error('No response from card %d (box %d)' % (card, host))
@@ -321,6 +321,9 @@ def main():
                         'which otherwise terminate the program')
     parser.add_argument('-b', '--boxes', nargs='+', type=int, metavar='box-number',
                         help='Space-separated list of boxes which should be used, ints expected')
+    parser.add_argument('-t', '--time', nargs=1, type=int, metavar='wating time',
+                        help='Waiting time during calibration routine between applying value and '
+                        'reading the result, given in seconds')
     parser.set_defaults(reset=False)
     parser.set_defaults(calibrate=False)
     parser.set_defaults(force=False)
@@ -345,6 +348,7 @@ def main():
     out_file = 'karte%03d.txt'
     stepping = 10
     v_range = [1300, 1650]
+    waiting_time = 3
     force = args.force
 
     if args.host_prefix:
@@ -398,6 +402,9 @@ def main():
         if args.range:
             v_range = args.range
             logger.info('The following voltage range will be used: %d <= V < %d' % tuple(v_range))
+        if args.time:
+            waiting_time = args.time[0]
+            logger.info('Set waiting time for applying calibration values to %d seconds', waiting_time)
 
 
     print_color('Start connecting to the CBHV boxes', 'GREEN')
@@ -406,7 +413,7 @@ def main():
         if not set_values(logger, host_prefix, hv_gains, reset, boxes):
             sys.exit('Failed setting CB HV values')
     else:
-        if not measure_values(logger, host_prefix, output, stepping, v_range, boxes):
+        if not measure_values(logger, host_prefix, output, stepping, v_range, wating_time, boxes):
             sys.exit('Failed measuring CB HV correction values')
 
     print_color('Done!', 'GREEN')
