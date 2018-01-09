@@ -3,7 +3,8 @@
 
 '''
 This Python script is intended to set gain correction values for
-the CBHV boxes. The values to be set can be either given by file
+the CBHV boxes as well as measure the correction values.
+The values which can be set can be either given by file
 or just setting all values to 0.
 '''
 
@@ -247,7 +248,7 @@ def measure_values(logger, host_prefix, output, stepping, v_range, waiting_time,
                 card = first_card + j
                 logger.debug('Handling card %d' % card)
                 with open(output % card, 'w') as out:
-                    out.write('Sollwert,Date,Level,CH0,CH1,CH2,CH3,CH4,CH5,CH6,CH7')
+                    out.write('Setpoint,Date,Level,CH0,CH1,CH2,CH3,CH4,CH5,CH6,CH7')
                     # run correction measurement loop
                     for val in range(v_range[0], v_range[1], stepping):
                         for channel in range(8):
@@ -289,8 +290,8 @@ def is_valid_dir(parser, arg):
 
 def main():
     """Main function: process all information, prepare simulation process, submit jobs"""
-    parser = argparse.ArgumentParser(description='Set correction values for CBHV boxes '
-                                     'via a given file, by default HV_gains_offsets.txt')
+    parser = argparse.ArgumentParser(description='CBHV boxes control: Set correction values '
+                                     'for boxes or measure them')
     parser.add_argument('-i', '--input', nargs=1, metavar='corr_file',
                         dest='corr_file',# required=True,
                         type=lambda x: is_valid_file(parser, x),
