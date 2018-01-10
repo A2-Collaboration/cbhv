@@ -5,14 +5,14 @@
 #include <algorithm>
 #include <TF1.h>
 
-void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
+void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 		   char *TxtFileName = "HV_gains_offsets.txt", Bool_t SavePlots = true)
 {
 	// the following values can be used to control different routines of this macro
 	const double fit_min = 1400;
 	const double fit_max = 1650;
-	const char* input_file_format = "karte%03d.txt";
-	const char* plot_output_format = "HV_gains_offsets%03d.pdf";
+	const char* input_file_format = "box%02d_card%02d.txt";
+	const char* plot_output_format = "HVgains_box%02d_card%02d.pdf";
 
 	// do not change anything of the following code unless you know what you're doing
 	const size_t max_size = 1000;  // allocate arrays to hold at maximum this amount of measured values
@@ -50,11 +50,12 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	}
 	vector<double> setHV;
 	double hv, ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7;
-	// Loop over all chosen files
-	for (size_t i = start; i <= stop; i++) {
+	// Loop over all chosen boxes
+	for (size_t box = box_start; box <= box_stop; box++) {
+	for (size_t card = 0; card < 5; card++) {
 
 		// Set file name
-		sprintf(FileName, input_file_format, i);
+		sprintf(FileName, input_file_format, box, card);
 
 		// Open file
 		InFile = fopen(FileName, "r");
@@ -87,12 +88,13 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 		// Finding xlow, xup boundries
 		xlow = *min_element(setHV.begin(), setHV.end());
 		xup = *max_element(setHV.begin(), setHV.end());
-		//Loop over all channels from one board
+
+		// Loop over all channels from one board
 		for (size_t channel = 0; channel < n_channels; channel++) {
 			// Highlight next pad
 			hvcanv->cd(channel + 1);
-			sprintf(HistName, "Channel%d_Board%d", channel, i);
-			sprintf(HistTitle, "Board%d", i);
+			sprintf(HistName, "box%d_board%d_channel%d", box, card, channel);
+			sprintf(HistTitle, "Box%02d Board%d", box, card);
 			hist[channel] = new TH1F(HistName, HistTitle, setHV.size(), xlow - 5, xup + 5);
 			hist[channel]->SetMarkerStyle(2);
 			hist[channel]->SetMarkerColor(2);
@@ -100,7 +102,7 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 			for (size_t n = 0; n < setHV.size(); n++)
 				hist[channel]->SetBinContent(n + 1, channel_values[channel][n] - setHV[n]);
 
-			sprintf(fname, "f%d_%d", i, channel);
+			sprintf(fname, "f%d_%d_%d", box, card, channel);
 			//f[channel] = new TF1(fname, "pol1" , xlow, xup);
 			f[channel] = new TF1(fname, "pol1", fit_min, fit_max);
 			f[channel]->SetLineWidth(1);
@@ -111,16 +113,16 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 			float par0 = f[channel]->GetParameter(0);
 			float par1 = f[channel]->GetParameter(1);
 			if (SaveTxt)
-				fprintf(TxtFile, "%d,%d,%f,%f\r\n", i, channel, par1, par0);
+				fprintf(TxtFile, "%d,%d,%d,%f,%f\r\n", box, card, channel, par1, par0);
 		}
 		hvcanv->Update();
 		if (SavePlots) {
-			sprintf(plotFileName, plot_output_format, i);
+			sprintf(plotFileName, plot_output_format, box, card);
 			hvcanv->SaveAs(plotFileName);
 			printf("Saved histograms to %s\n", plotFileName);
 		}
 		fclose(InFile);
-	}
+	}}
 	if (SaveTxt) {
 		fclose(TxtFile);
 		printf("Saved values to %s\n", TxtFileName);
