@@ -15,19 +15,20 @@ void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 	const char* plot_output_format = "HVgains_box%02d_card%02d.pdf";
 
 	// do not change anything of the following code unless you know what you're doing
-	const size_t max_size = 1000;  // allocate arrays to hold at maximum this amount of measured values
-	const size_t n_channels = 8;  // channels per board
+	const size_t N_BOXES = 18;     // number of boxes
+	const size_t N_CARDS = 5;      // number of cards per box
+	const size_t N_CHANNELS = 8;   // number of channels per card
 	FILE *InFile;
 	FILE *TxtFile;
 	char FileName[255];
 	char plotFileName[100];
-	char line[max_size];
-	TH1F *hist[n_channels];
-	char HistName[max_size];
-	char HistTitle[max_size];
-	TF1 *f[n_channels];
-	Float_t xlow, xup;
+	char line[512];
+	char HistName[100];
+	char HistTitle[100];
+	TH1F *hist[N_CHANNELS];
+	TF1 *f[N_CHANNELS];
 	char fname[100];
+	double xlow, xup;
 
 	//Setting up the canvas
 	TCanvas *hvcanv = new TCanvas("HV", "HV", 0, 0, 1200, 800);
@@ -44,7 +45,7 @@ void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 	}
 
 	vector<vector<double>> channel_values;
-	for (size_t i = 0; i < n_channels; i++) {
+	for (size_t i = 0; i < N_CHANNELS; i++) {
 		vector<double> v;
 		channel_values.push_back(v);
 	}
@@ -52,7 +53,7 @@ void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 	double hv, ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7;
 	// Loop over all chosen boxes
 	for (size_t box = box_start; box <= box_stop; box++) {
-	for (size_t card = 0; card < 5; card++) {
+	for (size_t card = 0; card < N_CARDS; card++) {
 
 		// Set file name
 		sprintf(FileName, input_file_format, box, card);
@@ -90,7 +91,7 @@ void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 		xup = *max_element(setHV.begin(), setHV.end());
 
 		// Loop over all channels from one board
-		for (size_t channel = 0; channel < n_channels; channel++) {
+		for (size_t channel = 0; channel < N_CHANNELS; channel++) {
 			// Highlight next pad
 			hvcanv->cd(channel + 1);
 			sprintf(HistName, "box%d_board%d_channel%d", box, card, channel);
