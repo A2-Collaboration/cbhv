@@ -5,6 +5,13 @@
 void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 		   char *TxtFileName = "HV_gains_offsets.txt", Bool_t SavePlots = true)
 {
+	// the following values can be used to control different routines of this macro
+	const double fit_min = 1400;
+	const double fit_max = 1650;
+	const char* input_file_format = "karte%03d.txt";
+	const char* plot_output_format = "HV_gains_offsets%03d.pdf";
+
+	// do not change anything of the following code unless you know what you're doing
 	FILE *InFile;
 	FILE *TxtFile;
 	char FileName[255];
@@ -25,7 +32,6 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	TF1 *f[1000][8];
 	Float_t xlow = 10000;
 	Float_t xup = 0;
-	Float_t binwidth;
 	char fname[100];
 
 	//Setting up the canvas
@@ -39,13 +45,13 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 			printf("Error opening output file\n");
 			exit(1);
 		}
-		fprintf(TxtFile, "KarteNo,Kanal,Steig,Offset\n");
+		fprintf(TxtFile, "#CardNo,Channel,Slope,Offset\n");
 	}
 	// Loop over all chosen files
 	for (UInt_t i = start; i <= stop; i++) {
 
 		// Set file name
-		sprintf(FileName, "karte%03d.txt", i);
+		sprintf(FileName, input_file_format, i);
 
 		// Open file
 		InFile = fopen(FileName, "r");
@@ -80,14 +86,11 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 		xlow = SetHV[0];
 		xup = SetHV[0];
 		for (int n = 1; n < nbins; n++) {
-			if (SetHV[n] < xlow) {
+			if (SetHV[n] < xlow)
 				xlow = SetHV[n];
-			}
-			if (SetHV[n] > xup) {
+			if (SetHV[n] > xup)
 				xup = SetHV[n];
-			}
 		}
-		binwidth = 10;
 		//Loop over all 8 channels from one board
 		for (UInt_t j = 0; j < 8; j++) {
 			// Highlight next pad
@@ -105,7 +108,7 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 
 			sprintf(fname, "f%d_%d", i, j);
 			//f[i][j] = new TF1(fname, "pol1" , xlow, xup);
-			f[i][j] = new TF1(fname, "pol1", 1450, 1700);
+			f[i][j] = new TF1(fname, "pol1", fit_min, fit_max);
 			f[i][j]->SetLineWidth(1);
 			gStyle->SetOptStat("n");
 			HistHV[i][j]->Fit(f[i][j], "R0Q");
@@ -118,7 +121,7 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 		}
 		hvcanv->Update();
 		if (SavePlots) {
-			sprintf(plotFileName, "HV_gains_offsets%03d.pdf", i);
+			sprintf(plotFileName, plot_output_format, i);
 			hvcanv->SaveAs(plotFileName);
 			printf("Saved histograms to %s\n", plotFileName);
 		}
