@@ -22,10 +22,10 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	char FileName[255];
 	char plotFileName[100];
 	char line[max_size];
-	TH1F *HistHV[max_size][n_channels];
+	TH1F *hist[n_channels];
 	char HistName[max_size];
 	char HistTitle[max_size];
-	TF1 *f[max_size][n_channels];
+	TF1 *f[n_channels];
 	Float_t xlow, xup;
 	char fname[100];
 
@@ -93,23 +93,23 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 			hvcanv->cd(channel + 1);
 			sprintf(HistName, "Channel%d_Board%d", channel, i);
 			sprintf(HistTitle, "Board%d", i);
-			HistHV[i][channel] = new TH1F(HistName, HistTitle, setHV.size(), xlow - 5, xup + 5);
-			HistHV[i][channel]->SetMarkerStyle(2);
-			HistHV[i][channel]->SetMarkerColor(2);
+			hist[channel] = new TH1F(HistName, HistTitle, setHV.size(), xlow - 5, xup + 5);
+			hist[channel]->SetMarkerStyle(2);
+			hist[channel]->SetMarkerColor(2);
 			//Loop for the number of data points for 1 channel
 			for (size_t n = 0; n < setHV.size(); n++)
-				HistHV[i][channel]->SetBinContent(n + 1, channel_values[channel][n] - setHV[n]);
+				hist[channel]->SetBinContent(n + 1, channel_values[channel][n] - setHV[n]);
 
 			sprintf(fname, "f%d_%d", i, channel);
-			//f[i][channel] = new TF1(fname, "pol1" , xlow, xup);
-			f[i][channel] = new TF1(fname, "pol1", fit_min, fit_max);
-			f[i][channel]->SetLineWidth(1);
+			//f[channel] = new TF1(fname, "pol1" , xlow, xup);
+			f[channel] = new TF1(fname, "pol1", fit_min, fit_max);
+			f[channel]->SetLineWidth(1);
 			gStyle->SetOptStat("n");
-			HistHV[i][channel]->Fit(f[i][channel], "R0Q");
-			HistHV[i][channel]->Draw("P");
-			f[i][channel]->Draw("same");
-			float par0 = f[i][channel]->GetParameter(0);
-			float par1 = f[i][channel]->GetParameter(1);
+			hist[channel]->Fit(f[channel], "R0Q");
+			hist[channel]->Draw("P");
+			f[channel]->Draw("same");
+			float par0 = f[channel]->GetParameter(0);
+			float par1 = f[channel]->GetParameter(1);
 			if (SaveTxt)
 				fprintf(TxtFile, "%d,%d,%f,%f\r\n", i, channel, par1, par0);
 		}
