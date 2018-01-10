@@ -12,24 +12,26 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	const char* plot_output_format = "HV_gains_offsets%03d.pdf";
 
 	// do not change anything of the following code unless you know what you're doing
+	const unsigned int max_size = 1000;  // allocate arrays to hold at maximum this amount of measured values
+	const unsigned int n_channels = 8;  // channels per board
 	FILE *InFile;
 	FILE *TxtFile;
 	char FileName[255];
 	char plotFileName[100];
-	char line[1000];
-	Float_t SetHV[1000];
-	char SSetHV[1000];
-	UInt_t level[1000];
-	char Slevel[1000];
-	Float_t chn[8][1000];
-	char Schn0[1000], Schn1[1000], Schn2[1000], Schn3[1000], Schn4[1000],
-	     Schn5[1000], Schn6[1000], Schn7[1000];
-	TH1F *HistHV[1000][8];
-	char HistName[1000];
-	char HistTitle[1000];
-	Float_t delta[8][1000];
+	char line[max_size];
+	Float_t SetHV[max_size];
+	char SSetHV[max_size];
+	UInt_t level[max_size];
+	char Slevel[max_size];
+	Float_t chn[n_channels][max_size];
+	char Schn0[max_size], Schn1[max_size], Schn2[max_size], Schn3[max_size], Schn4[max_size],
+	     Schn5[max_size], Schn6[max_size], Schn7[max_size];
+	TH1F *HistHV[max_size][n_channels];
+	char HistName[max_size];
+	char HistTitle[max_size];
+	Float_t delta[n_channels][max_size];
 	UInt_t nbins;
-	TF1 *f[1000][8];
+	TF1 *f[max_size][n_channels];
 	Float_t xlow = 10000;
 	Float_t xup = 0;
 	char fname[100];
@@ -91,8 +93,8 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 			if (SetHV[n] > xup)
 				xup = SetHV[n];
 		}
-		//Loop over all 8 channels from one board
-		for (UInt_t j = 0; j < 8; j++) {
+		//Loop over all channels from one board
+		for (UInt_t j = 0; j < n_channels; j++) {
 			// Highlight next pad
 			hvcanv->cd(j + 1);
 			sprintf(HistName, "Channel%d_Board%d", j, i);
