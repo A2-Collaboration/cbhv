@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <fstream.h>
+#include <vector>
+#include <iostream>
+#include <algorithm>
 #include <TF1.h>
 
 void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
@@ -19,21 +22,11 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	char FileName[255];
 	char plotFileName[100];
 	char line[max_size];
-	Float_t SetHV[max_size];
-	char SSetHV[max_size];
-	UInt_t level[max_size];
-	char Slevel[max_size];
-	Float_t chn[n_channels][max_size];
-	char Schn0[max_size], Schn1[max_size], Schn2[max_size], Schn3[max_size], Schn4[max_size],
-	     Schn5[max_size], Schn6[max_size], Schn7[max_size];
 	TH1F *HistHV[max_size][n_channels];
 	char HistName[max_size];
 	char HistTitle[max_size];
-	Float_t delta[n_channels][max_size];
-	UInt_t nbins;
 	TF1 *f[max_size][n_channels];
-	Float_t xlow = 10000;
-	Float_t xup = 0;
+	Float_t xlow, xup;
 	char fname[100];
 
 	//Setting up the canvas
@@ -49,6 +42,15 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 		}
 		fprintf(TxtFile, "#CardNo,Channel,Slope,Offset\n");
 	}
+
+	vector<vector<double>> channel_values;
+	for (unsigned int i = 0; i < n_channels; i++) {
+		vector<double> v;
+		channel_values.push_back(v);
+	}
+	vector<double> setHV;
+	double hv, ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7;
+	int lvl;
 	// Loop over all chosen files
 	for (UInt_t i = start; i <= stop; i++) {
 
@@ -62,51 +64,42 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 			printf("File '%s' not found.\n", FileName);
 			continue;
 		}
-		nbins = 0;
 		// File opening worked
 		fscanf(InFile, "%s", line);	// Skip the first line, it is one big string
-		fscanf(InFile, "%[^,],%*s %*[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%s",
-				       SSetHV, Slevel, Schn0, Schn1, Schn2, Schn3, Schn4, Schn5, Schn6, Schn7);	// Read in normal line, use comma as delimiter (mostly)
+		setHV.clear();
+		for (unsigned int c = 0; c < channel_values.size(); c++)
+			channel_values.at(c).clear();
+		fscanf(InFile, "%lf,%*s %*[^,],%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%*s",
+		       &hv, &lvl, &ch0, &ch1, &ch2, &ch3, &ch4, &ch5, &ch6, &ch7);  // Read in normal line, use comma as delimiter (mostly)
 		// Check whether read line was already at the end of file
 		while (!feof(InFile)) {
-			// Convert strings into numbers
-			sscanf(SSetHV, "%f", &SetHV[nbins]);
-			sscanf(Slevel, "%d", &level[nbins]);
-			sscanf(Schn0, "%f", &chn[0][nbins]);
-			sscanf(Schn1, "%f", &chn[1][nbins]);
-			sscanf(Schn2, "%f", &chn[2][nbins]);
-			sscanf(Schn3, "%f", &chn[3][nbins]);
-			sscanf(Schn4, "%f", &chn[4][nbins]);
-			sscanf(Schn5, "%f", &chn[5][nbins]);
-			sscanf(Schn6, "%f", &chn[6][nbins]);
-			sscanf(Schn7, "%f", &chn[7][nbins]);
-			nbins++;	// Good line, increase counter
-			fscanf(InFile, "%[^,],%*s %*[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%s",
-					       SSetHV, Slevel, Schn0, Schn1, Schn2, Schn3, Schn4, Schn5, Schn6, Schn7);	// Read in normal line, use comma as delimiter (mostly)
+			setHV.push_back(hv);
+			channel_values[0].push_back(ch0);
+			channel_values[1].push_back(ch1);
+			channel_values[2].push_back(ch2);
+			channel_values[3].push_back(ch3);
+			channel_values[4].push_back(ch4);
+			channel_values[5].push_back(ch5);
+			channel_values[6].push_back(ch6);
+			channel_values[7].push_back(ch7);
+			fscanf(InFile, "%lf,%*s %*[^,],%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%*s",
+		       &hv, &lvl, &ch0, &ch1, &ch2, &ch3, &ch4, &ch5, &ch6, &ch7);  // Read in normal line, use comma as delimiter (mostly)
 		}
 		// Finding xlow, xup boundries
-		xlow = SetHV[0];
-		xup = SetHV[0];
-		for (int n = 1; n < nbins; n++) {
-			if (SetHV[n] < xlow)
-				xlow = SetHV[n];
-			if (SetHV[n] > xup)
-				xup = SetHV[n];
-		}
+		xlow = *min_element(setHV.begin(), setHV.end());
+		xup = *max_element(setHV.begin(), setHV.end());
 		//Loop over all channels from one board
 		for (UInt_t j = 0; j < n_channels; j++) {
 			// Highlight next pad
 			hvcanv->cd(j + 1);
 			sprintf(HistName, "Channel%d_Board%d", j, i);
 			sprintf(HistTitle, "Board%d", i);
-			HistHV[i][j] = new TH1F(HistName, HistTitle, nbins, xlow - 5, xup + 5);
+			HistHV[i][j] = new TH1F(HistName, HistTitle, setHV.size(), xlow - 5, xup + 5);
 			HistHV[i][j]->SetMarkerStyle(2);
 			HistHV[i][j]->SetMarkerColor(2);
 			//Loop for the number of data points for 1 channel
-			for (UInt_t k = 0; k < nbins; k++) {
-				delta[j][k] = chn[j][k] - SetHV[k];
-				HistHV[i][j]->SetBinContent(k + 1, delta[j][k]);
-			}
+			for (UInt_t k = 0; k < setHV.size(); k++)
+				HistHV[i][j]->SetBinContent(k + 1, channel_values[j][k] - setHV[k]);
 
 			sprintf(fname, "f%d_%d", i, j);
 			//f[i][j] = new TF1(fname, "pol1" , xlow, xup);
