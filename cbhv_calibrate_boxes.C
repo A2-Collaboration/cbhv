@@ -50,7 +50,6 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	}
 	vector<double> setHV;
 	double hv, ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7;
-	int lvl;
 	// Loop over all chosen files
 	for (UInt_t i = start; i <= stop; i++) {
 
@@ -69,8 +68,8 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 		setHV.clear();
 		for (unsigned int c = 0; c < channel_values.size(); c++)
 			channel_values.at(c).clear();
-		fscanf(InFile, "%lf,%*s %*[^,],%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%*s",
-		       &hv, &lvl, &ch0, &ch1, &ch2, &ch3, &ch4, &ch5, &ch6, &ch7);  // Read in normal line, use comma as delimiter (mostly)
+		fscanf(InFile, "%lf,%*s %*[^,],%*d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%*s",
+		       &hv, &ch0, &ch1, &ch2, &ch3, &ch4, &ch5, &ch6, &ch7);  // Read in normal line, use comma as delimiter (mostly)
 		// Check whether read line was already at the end of file
 		while (!feof(InFile)) {
 			setHV.push_back(hv);
@@ -82,8 +81,8 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 			channel_values[5].push_back(ch5);
 			channel_values[6].push_back(ch6);
 			channel_values[7].push_back(ch7);
-			fscanf(InFile, "%lf,%*s %*[^,],%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%*s",
-		       &hv, &lvl, &ch0, &ch1, &ch2, &ch3, &ch4, &ch5, &ch6, &ch7);  // Read in normal line, use comma as delimiter (mostly)
+			fscanf(InFile, "%lf,%*s %*[^,],%*d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%*s",
+		       &hv, &ch0, &ch1, &ch2, &ch3, &ch4, &ch5, &ch6, &ch7);  // Read in normal line, use comma as delimiter (mostly)
 		}
 		// Finding xlow, xup boundries
 		xlow = *min_element(setHV.begin(), setHV.end());
