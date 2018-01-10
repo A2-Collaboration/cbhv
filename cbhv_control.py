@@ -141,27 +141,26 @@ def set_values(logger, host_prefix, hv_gains=None, reset=False, boxes=list(range
 
     # start connecting to the boxes
     logger.debug('Start loop over the following boxes: ' + list2str(boxes))
-    for i in boxes:
-        host = host_prefix % i
+    for box in boxes:
+        host = host_prefix % box
         logger.info('Connecting to box ' + host)
         with TelnetManager(host, logger=logger) as tnm:
             if not tnm.send_command('eemem unprotect'):
                 logger.warning('Box %s may be dead, continue with next one' % host)
                 continue
-            first_card = i*5-4
             logger.info('Start setting correction values, this may take 2 minutes or longer')
             # loop over cards per box
-            for j in range(5):
-                card = first_card + j
+            for card in range(5):
                 logger.debug('Handling card %d' % card)
                 m_vals, n_vals = [], []
                 m_cmd, n_cmd = '', ''
                 # loop over channels per card and read the values if they should not be set to 0
                 if not reset:
                     for channel in range(8):
-                        line = next((i for i in hv_gains if i.startswith("%d,%d" % (card, channel))), None)
+                        line = next((i for i in hv_gains if i.startswith("%d,%d,%d" % (box, card, channel))), None)
                         if not line:
-                            logger.error("No values found for card %d, channel %d" % (card, channel))
+                            logger.error("No values found for box %d, card %d, channel %d"
+                                         % (box, card, channel))
                             continue
                         vals = line.strip().split(',')[-2:]
                         m_vals.append(vals[0])
@@ -170,11 +169,11 @@ def set_values(logger, host_prefix, hv_gains=None, reset=False, boxes=list(range
                     if len(m_vals) is not 8 or len(n_vals) is not 8:
                         logger.error("Card %d problem parsing values!" % card)
                         continue
-                    m_cmd = "eemem add M%d %s\r\n" % (j, ','.join(m_vals))
-                    n_cmd = "eemem add N%d %s\r\n" % (j, ','.join(n_vals))
+                    m_cmd = "eemem add M%d %s\r\n" % (card, ','.join(m_vals))
+                    n_cmd = "eemem add N%d %s\r\n" % (card, ','.join(n_vals))
                 else:
-                    m_cmd = "eemem add M%d %s\r\n" % (j, ','.join('0'*8))
-                    n_cmd = "eemem add N%d %s\r\n" % (j, ','.join('0'*8))
+                    m_cmd = "eemem add M%d %s\r\n" % (card, ','.join('0'*8))
+                    n_cmd = "eemem add N%d %s\r\n" % (card, ','.join('0'*8))
 
                 if not tnm.send_command(m_cmd):
                     logger.warning('Box %s may be dead, continue with next one' % host)
@@ -233,31 +232,29 @@ def measure_values(logger, host_prefix, output, stepping, v_range, waiting_time,
 
     # start connecting to the boxes
     logger.debug('Start loop over the following boxes: ' + list2str(boxes))
-    for i in boxes:
-        host = host_prefix % i
+    for box in boxes:
+        host = host_prefix % box
         logger.info('Connecting to box ' + host)
         with TelnetManager(host, logger=logger) as tnm:
             # set the time on the board
             if not tnm.send_command('time ' + time_str('%H %M %S %d %m %Y')):
                 logger.warning('Box %s may be dead, continue with next one' % host)
                 continue
-            first_card = i*5-4
             logger.info('Start measuring correction values, this will take some time')
             # loop over cards per box
-            for j in range(5):
-                card = first_card + j
+            for card in range(5):
                 logger.debug('Handling card %d' % card)
-                with open(output % card, 'w') as out:
+                with open(output % (box, card), 'w') as out:
                     out.write('#Setpoint,Date,Level,CH0,CH1,CH2,CH3,CH4,CH5,CH6,CH7\n')
                     # run correction measurement loop
                     for val in range(v_range[0], v_range[1], stepping):
                         for channel in range(8):
-                            if not tnm.send_command('SetVpmF %d %d %d' % (j, channel, val)):
+                            if not tnm.send_command('SetVpmF %d %d %d' % (card, channel, val)):
                                 logger.warning('Channel %d of box %s may be dead, '
                                                'continue with next one' % (channel, host))
                                 continue
                         sleep(waiting_time)
-                        ret = tnm.send_command('read_adc csv2L %d' % j, return_response=True)
+                        ret = tnm.send_command('read_adc csv2L %d' % card, return_response=True)
                         if not ret:
                             logger.error('No response from card %d (box %d)' % (card, host))
                             continue
@@ -310,8 +307,8 @@ def main():
                         help='Measure correction values')
     parser.add_argument('-n', '--name', nargs=1, type=str,
                         dest='out_file', metavar='"output file name"',
-                        help='Specify the output file name for the correction values '
-                        'if -c/--calibrate is used including formatting, like "karte%%04d.txt". '
+                        help='Specify the output file name for the correction values if '
+                        '-c/--calibrate is used including formatting, like "box%%02d_card%%d.txt". '
                         'Output path can be changed with -o/--output.')
     parser.add_argument('-s', '--stepping', nargs=1, type=int,
                         help='Voltage stepping used for calibration')
@@ -346,7 +343,7 @@ def main():
     gains_file = 'HV_gains_offsets.txt'
     hv_gains = []
     output = './cbhv_corr_measuremt'
-    out_file = 'karte%03d.txt'
+    out_file = 'box%02d_card%d.txt'
     stepping = 10
     v_range = [1300, 1650]
     waiting_time = 1
