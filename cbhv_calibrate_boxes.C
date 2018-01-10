@@ -11,8 +11,8 @@ void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 	// the following values can be used to control different routines of this macro
 	const double fit_min = 1400;
 	const double fit_max = 1650;
-	const char* input_file_format = "box%02d_card%02d.txt";
-	const char* plot_output_format = "HVgains_box%02d_card%02d.pdf";
+	const char* input_file_format = "box%02d_card%d.txt";
+	const char* plot_output_format = "HVgains_box%02d_card%d.pdf";
 
 	// do not change anything of the following code unless you know what you're doing
 	const size_t N_BOXES = 18;     // number of boxes
