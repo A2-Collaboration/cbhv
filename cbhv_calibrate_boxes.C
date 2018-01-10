@@ -15,8 +15,8 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	const char* plot_output_format = "HV_gains_offsets%03d.pdf";
 
 	// do not change anything of the following code unless you know what you're doing
-	const unsigned int max_size = 1000;  // allocate arrays to hold at maximum this amount of measured values
-	const unsigned int n_channels = 8;  // channels per board
+	const size_t max_size = 1000;  // allocate arrays to hold at maximum this amount of measured values
+	const size_t n_channels = 8;  // channels per board
 	FILE *InFile;
 	FILE *TxtFile;
 	char FileName[255];
@@ -44,14 +44,14 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 	}
 
 	vector<vector<double>> channel_values;
-	for (unsigned int i = 0; i < n_channels; i++) {
+	for (size_t i = 0; i < n_channels; i++) {
 		vector<double> v;
 		channel_values.push_back(v);
 	}
 	vector<double> setHV;
 	double hv, ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7;
 	// Loop over all chosen files
-	for (UInt_t i = start; i <= stop; i++) {
+	for (size_t i = start; i <= stop; i++) {
 
 		// Set file name
 		sprintf(FileName, input_file_format, i);
@@ -66,7 +66,7 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 		// File opening worked
 		fscanf(InFile, "%s", line);	// Skip the first line, it is one big string
 		setHV.clear();
-		for (unsigned int c = 0; c < channel_values.size(); c++)
+		for (size_t c = 0; c < channel_values.size(); c++)
 			channel_values.at(c).clear();
 		fscanf(InFile, "%lf,%*s %*[^,],%*d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%*s",
 		       &hv, &ch0, &ch1, &ch2, &ch3, &ch4, &ch5, &ch6, &ch7);  // Read in normal line, use comma as delimiter (mostly)
@@ -88,30 +88,30 @@ void Karte(UInt_t start, UInt_t stop, Bool_t SaveTxt = true,
 		xlow = *min_element(setHV.begin(), setHV.end());
 		xup = *max_element(setHV.begin(), setHV.end());
 		//Loop over all channels from one board
-		for (UInt_t j = 0; j < n_channels; j++) {
+		for (size_t channel = 0; channel < n_channels; channel++) {
 			// Highlight next pad
-			hvcanv->cd(j + 1);
-			sprintf(HistName, "Channel%d_Board%d", j, i);
+			hvcanv->cd(channel + 1);
+			sprintf(HistName, "Channel%d_Board%d", channel, i);
 			sprintf(HistTitle, "Board%d", i);
-			HistHV[i][j] = new TH1F(HistName, HistTitle, setHV.size(), xlow - 5, xup + 5);
-			HistHV[i][j]->SetMarkerStyle(2);
-			HistHV[i][j]->SetMarkerColor(2);
+			HistHV[i][channel] = new TH1F(HistName, HistTitle, setHV.size(), xlow - 5, xup + 5);
+			HistHV[i][channel]->SetMarkerStyle(2);
+			HistHV[i][channel]->SetMarkerColor(2);
 			//Loop for the number of data points for 1 channel
-			for (UInt_t k = 0; k < setHV.size(); k++)
-				HistHV[i][j]->SetBinContent(k + 1, channel_values[j][k] - setHV[k]);
+			for (size_t n = 0; n < setHV.size(); n++)
+				HistHV[i][channel]->SetBinContent(n + 1, channel_values[channel][n] - setHV[n]);
 
-			sprintf(fname, "f%d_%d", i, j);
-			//f[i][j] = new TF1(fname, "pol1" , xlow, xup);
-			f[i][j] = new TF1(fname, "pol1", fit_min, fit_max);
-			f[i][j]->SetLineWidth(1);
+			sprintf(fname, "f%d_%d", i, channel);
+			//f[i][channel] = new TF1(fname, "pol1" , xlow, xup);
+			f[i][channel] = new TF1(fname, "pol1", fit_min, fit_max);
+			f[i][channel]->SetLineWidth(1);
 			gStyle->SetOptStat("n");
-			HistHV[i][j]->Fit(f[i][j], "R0Q");
-			HistHV[i][j]->Draw("P");
-			f[i][j]->Draw("same");
-			float par0 = f[i][j]->GetParameter(0);
-			float par1 = f[i][j]->GetParameter(1);
+			HistHV[i][channel]->Fit(f[i][channel], "R0Q");
+			HistHV[i][channel]->Draw("P");
+			f[i][channel]->Draw("same");
+			float par0 = f[i][channel]->GetParameter(0);
+			float par1 = f[i][channel]->GetParameter(1);
 			if (SaveTxt)
-				fprintf(TxtFile, "%d,%d,%f,%f\r\n", i, j, par1, par0);
+				fprintf(TxtFile, "%d,%d,%f,%f\r\n", i, channel, par1, par0);
 		}
 		hvcanv->Update();
 		if (SavePlots) {
