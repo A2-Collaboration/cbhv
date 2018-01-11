@@ -1,3 +1,10 @@
+/**
+ * Calibrate the boxes after running the correction value measurement using the provided Python script cbhv_control.py
+ *
+ * This macro can be compiled using the following command: g++ -o calib_boxes cbhv_calibrate_boxes.C `root-config --cflags --glibs`
+ * To run it, you can then call it with e.g. "./calib_boxes 1 16" to use the boxes 1 to 16. Without arguments it runs over all boxes from 1 to 18.
+ */
+
 #include <iostream>
 #include <vector>
 #include <string>
