@@ -1,12 +1,19 @@
-#include <stdio.h>
-#include <fstream>
-#include <vector>
 #include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
 #include <algorithm>
-#include <TF1.h>
 
-void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
-		   char *TxtFileName = "HV_gains_offsets.txt", Bool_t SavePlots = true)
+#include <TROOT.h>
+#include <TH1.h>
+#include <TF1.h>
+#include <TCanvas.h>
+#include <TStyle.h>
+
+using namespace std;
+
+void Karte(const size_t box_start = 1, const size_t box_stop = 18, const bool SaveTxt = true,
+           const string TxtFileName = "HV_gains_offsets.txt", const bool SavePlots = true)
 {
 	// the following values can be used to control different routines of this macro
 	const double fit_min = 1400;
@@ -36,9 +43,9 @@ void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 	hvcanv->Divide(3, 3, 0.001, 0.001);
 
 	if (SaveTxt) {
-		TxtFile = fopen(TxtFileName, "w");
+		TxtFile = fopen(TxtFileName.c_str(), "w");
 		if (!TxtFile) {
-			printf("Error opening output file\n");
+			cerr << "Error opening output file" << endl;
 			exit(1);
 		}
 		fprintf(TxtFile, "#CardNo,Channel,Slope,Offset\n");
@@ -62,7 +69,7 @@ void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 		InFile = fopen(FileName, "r");
 		if (!InFile) {
 			// File opening did not work
-			printf("File '%s' not found.\n", FileName);
+			cerr << "File '" << FileName << "' not found." << endl;
 			continue;
 		}
 		// File opening worked
@@ -120,12 +127,49 @@ void Karte(size_t box_start = 1, size_t box_stop = 18, Bool_t SaveTxt = true,
 		if (SavePlots) {
 			sprintf(plotFileName, plot_output_format, box, card);
 			hvcanv->SaveAs(plotFileName);
-			printf("Saved histograms to %s\n", plotFileName);
+			cout << "Saved histograms to " << plotFileName << endl;
 		}
 		fclose(InFile);
 	}}
 	if (SaveTxt) {
 		fclose(TxtFile);
-		printf("Saved values to %s\n", TxtFileName);
+		cout << "Saved values to " << TxtFileName << endl;
 	}
+}
+
+
+int cbhv_calibrate_boxes(size_t start = 1, size_t stop = 18)
+{
+	cout << "Start calibrating cards from box " << start << " to box " << stop << endl;
+	Karte(start, stop);
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	if (argc > 3) {
+		cerr << "Too many arguments!" << endl;
+		return argc;
+	}
+
+	int start = 1;
+	int stop = 18;
+	if (argc >= 2) {
+		if (*argv[1] == '0')  // !int(0) is true, so using only the other if condition would make it impossible to pass a 0 through without error
+			start = 0;
+		else if (!(start = atoi(argv[1]))) {
+			cerr << "Invalid input! First argument is not an integer." << endl;
+			return 1;
+		}
+	}
+	if (argc == 3) {
+		if (*argv[2] == '0')
+			stop = 0;
+		else if (!(stop = atoi(argv[2]))) {
+			cerr << "Invalid input! Second argument is not an integer." << endl;
+			return 1;
+		}
+	}
+
+	return cbhv_calibrate_boxes(start, stop);
 }
