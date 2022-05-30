@@ -1,6 +1,12 @@
 # CBHV
 Scripts and tools for the Crystal Ball High Voltage
 
+## Calibration of the CBHV values using a source
+
+The procedure for how to perform a calibration of the CBHV values using an AmBe source is documented on the a2wiki: https://a2wiki.kph.uni-mainz.de/experiment/detectors/cb/source_calibration
+
+Most of the code needed for this procedure is provided by ant (https://github.com/A2-Collaboration/ant). Stored in this repository are all the produced lists of CBHV values, dated by year and month, as well as a macro which can be used in the end of the procedure.
+
 ## Calibration of CBHV cards
 
 Everytime a PMT get's exchanged or even a splitter card is broken and exchanged, a calibration of the correction values has to be done. There are some crucial steps:
